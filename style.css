@@ -152,3 +152,19 @@ summary { cursor: pointer; font-weight: 600; }
 .plan-out div { background: rgba(255,255,255,.75); border: 1px solid var(--line); border-radius: 14px; padding: 8px 4px; text-align: center; }
 .plan-out span { display: block; font-size: 11px; color: var(--muted); }
 .plan-out b { font-size: 18px; color: var(--accent); }
+
+/* Illustrated faces */
+.av { padding: 2px; display: grid; place-items: center; border-radius: 50% !important; }
+.av svg, .avatar-big svg, .chip-face svg { display: block; border-radius: 50%; }
+.avatar-big { padding: 4px; }
+.chip-face { display: grid; place-items: center; }
+.person svg { display: inline-block; border-radius: 50%; box-shadow: 0 3px 10px rgba(0,0,0,.12); }
+.face-btn { display: flex !important; align-items: center; justify-content: center; gap: 8px; }
+.face-btn svg { border-radius: 50%; flex: none; }
+.face-row { display: flex; gap: 10px; align-items: flex-start; }
+.face-row svg { flex: none; border-radius: 50%; }
+.rep-title { display: flex; align-items: center; gap: 8px; }
+.rep-title svg { border-radius: 50%; }
+.avatars { display: grid !important; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.av { aspect-ratio: 1; width: 100%; }
+.av svg { width: 100%; height: auto; }

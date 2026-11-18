@@ -35,7 +35,7 @@ const stepTag = (n, name) => `<div class="step">STAR ${n} OF 6 · ${name}</div>`
 // ---------- Home ----------
 function home() {
   const names = Object.keys(DB.learners);
-  const avatars = ['👩🏽', '👩🏾', '👩🏽‍🦱', '👵🏽', '🧕🏽', '👵🏾']; // brown skin tones, younger and older women
+  const avatars = FACES.map((_, i) => i); // illustrated Indian women (faces.js)
   screen(`
     <div class="login">
       <div class="logo-orb">🫓<span>₹</span></div>
@@ -48,12 +48,12 @@ function home() {
       </div>
       <div class="card glass pane" id="pane-member">
         <p class="lbl">Pick your picture</p>
-        <div class="avatars">${avatars.map((a, i) => `<button class="av ${i === 0 ? 'on' : ''}" data-av="${a}">${a}</button>`).join('')}</div>
+        <div class="avatars">${avatars.map((a, i) => `<button class="av ${i === 0 ? 'on' : ''}" data-av="${a}" aria-label="Picture ${i + 1}">${faceSVG(a, 44)}</button>`).join('')}</div>
         <div class="field"><input id="nm" class="inp" placeholder=" " autocomplete="off"><label for="nm">Your name</label></div>
         <div class="field"><input id="mypin" class="inp" type="password" inputmode="numeric" maxlength="4" placeholder=" "><label for="mypin">Make a 4-digit PIN</label></div>
         <button class="btn shine" id="start">Start learning ➜</button>
         ${names.length ? `<p class="lbl">Welcome back, tap your name</p><div class="chips">${names.map(n => `
-          <button class="chip-l" data-n="${n}"><span>${DB.learners[n].avatar || '👩🏽'}</span>${n}
+          <button class="chip-l" data-n="${n}"><span class="chip-face">${avatarHTML(DB.learners[n].avatar, 34)}</span>${n}
             <small>${Math.round(DB.learners[n].mastery.K2 * 100)}% profit %</small></button>`).join('')}</div>` : ''}
       </div>
       <div class="card glass pane hidden" id="pane-didi">
@@ -71,7 +71,7 @@ function home() {
     $('pane-didi').classList.toggle('hidden', b.dataset.tab !== 'didi');
   });
   app.querySelectorAll('.av').forEach(b => b.onclick = () => {
-    av = b.dataset.av; app.querySelectorAll('.av').forEach(x => x.classList.toggle('on', x === b));
+    av = +b.dataset.av; app.querySelectorAll('.av').forEach(x => x.classList.toggle('on', x === b));
   });
   $('start').onclick = () => {
     const n = $('nm').value.trim(), pn = $('mypin').value.trim();
@@ -107,7 +107,7 @@ function memberLogin(name) {
   const m = DB.learners[name];
   if (!m.pin) { L = m; return startSession(); }       // older profile without PIN
   screen(`<div class="card glass center">
-    <div class="avatar-big">${m.avatar || '👩🏽'}</div><h2>Welcome back, ${m.name}!</h2>
+    <div class="avatar-big">${avatarHTML(m.avatar, 64)}</div><h2>Welcome back, ${m.name}!</h2>
     <p class="lbl">Enter your 4-digit PIN</p>
     <div class="pin-dots">${[0, 1, 2, 3].map(i => `<span id="d${i}"></span>`).join('')}</div>
     <div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, '←'].map(k => `<button class="key" data-k="${k}">${k}</button>`).join('')}</div>
@@ -134,7 +134,7 @@ function profile() {
   const weakest = Object.keys(SKILLS).reduce((a, k) => L.mastery[k] < L.mastery[a] ? k : a, 'K2');
   screen(`
     <div class="card glass profile-head">
-      <div class="avatar-big">${L.avatar || '👩🏽'}</div>
+      <div class="avatar-big">${avatarHTML(L.avatar, 64)}</div>
       <div><h2>${L.name}</h2><p class="muted">Ujala Mahila Bachat Gat · member</p></div>
       <button class="chip-out" id="out">Log out</button>
     </div>
@@ -217,7 +217,7 @@ function report() {
       points="${H.map((h, i) => `${(i / (H.length - 1)) * W},${Ht - h[k] * Ht}`).join(' ')}"/>`;
   const hints = ans.filter(e => e.hint).length, avgSec = ans.length ? Math.round(ans.reduce((a, e) => a + (e.secs || 0), 0) / ans.length) : 0;
   screen(`
-    <div class="step">MY REPORT</div><h2>${L.avatar || ''} ${L.name}'s progress</h2>
+    <div class="step">MY REPORT</div><h2 class="rep-title">${avatarHTML(L.avatar, 40)} ${L.name}'s progress</h2>
     <div class="card glass"><p class="lbl">Mastery over time</p>
       ${H.length < 2 ? '<p class="muted">Answer a few questions to see your line grow.</p>' : `
       <svg viewBox="0 0 ${W} ${Ht}" class="chart">${[0.5, 0.8].map(y => `<line x1="0" x2="${W}" y1="${Ht - y * Ht}" y2="${Ht - y * Ht}" stroke="#bbb" stroke-dasharray="4 4"/>`).join('')}
@@ -255,12 +255,12 @@ function challenge() {
   screen(`${stepTag(1, 'THE CHALLENGE')}
     <h2>Who is right? 🤔</h2>
     <div class="card"><p>We bought papad for <b>₹400</b> and sold it all for <b>₹500</b>.</p>
-      <div class="duo"><div class="person">👩🏽 <b>Meena</b><br>"20% profit"</div><div class="person">👩🏾 <b>Lata</b><br>"25% profit"</div></div>
+      <div class="duo"><div class="person">${faceSVG(0, 58)}<br><b>Meena</b><br>"20% profit"</div><div class="person">${faceSVG(2, 58)}<br><b>Lata</b><br>"25% profit"</div></div>
       </div>
     ${stepTag(2, 'YOUR IDEA')}
     <p><b>What do you think?</b> There is no wrong answer here, just tell us your idea.</p>
-    <button class="btn alt" data-c="meena">👩🏽 Meena is right (20%)</button>
-    <button class="btn alt" data-c="lata">👩🏾 Lata is right (25%)</button>
+    <button class="btn alt face-btn" data-c="meena">${faceSVG(0, 30)} Meena is right (20%)</button>
+    <button class="btn alt face-btn" data-c="lata">${faceSVG(2, 30)} Lata is right (25%)</button>
     <button class="btn alt" data-c="unsure">🤷 I am not sure</button>`);
   app.querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
     L.challenge = b.dataset.c;
@@ -275,8 +275,8 @@ function challenge() {
 function perspectives() {
   screen(`${stepTag(3, 'TWO WAYS OF THINKING')}
     <h2>How did each of them think?</h2>
-    <div class="card"><b>👩🏽 Meena:</b> "Profit = 500 − 400 = ₹100. ₹100 out of <u>₹500</u> = 20%."</div>
-    <div class="card"><b>👩🏾 Lata:</b> "Profit = ₹100. ₹100 out of <u>₹400</u>, the money we <b>put in</b> = 25%."</div>
+    <div class="card face-row">${faceSVG(0, 40)}<div><b>Meena:</b> "Profit = 500 − 400 = ₹100. ₹100 out of <u>₹500</u> = 20%."</div></div>
+    <div class="card face-row">${faceSVG(2, 40)}<div><b>Lata:</b> "Profit = ₹100. ₹100 out of <u>₹400</u>, the money we <b>put in</b> = 25%."</div></div>
     <div class="feedback">Both found the profit (₹100) correctly. The difference is <b>what they compared it with</b>.
       Profit % compares the profit with the money you <b>started with</b> (cost price). So <b>Lata is right: 25%</b>.
       ${L.challenge === 'meena' ? '<p>You thought like Meena. Many sellers do! Now you know the secret: always compare with the cost price.</p>' : ''}
