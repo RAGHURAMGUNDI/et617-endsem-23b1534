@@ -1,0 +1,47 @@
+/* Munafa Tutor — large, low-text, phone-first */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: #fdf6ec; color: #2a2118;
+  font-size: 18px; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
+.top { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #7a3e9d; color: #fff; }
+.brand { color: #fff; font-weight: 700; font-size: 20px; text-decoration: none; }
+.tag { font-size: 13px; opacity: .85; }
+main { flex: 1; max-width: 680px; width: 100%; margin: 0 auto; padding: 14px; }
+.foot { text-align: center; font-size: 14px; padding: 10px; background: #efe2f5; }
+.foot a { color: #5b2a77; }
+h1 { font-size: 25px; margin: 6px 0; } h2 { font-size: 21px; margin: 8px 0; } h3 { margin: 4px 0; }
+.big-emoji { font-size: 54px; text-align: center; }
+.muted { color: #6f6257; font-size: 15px; }
+.card { background: #fff; border-radius: 14px; padding: 14px; margin: 12px 0; box-shadow: 0 2px 6px rgba(0,0,0,.07); }
+.step { font-size: 12px; font-weight: 700; color: #7a3e9d; letter-spacing: .6px; margin-top: 6px; }
+.banner { background: #fff1c9; border-radius: 10px; padding: 8px 12px; font-weight: 700; }
+button { font: inherit; cursor: pointer; border: none; border-radius: 12px; }
+.btn { display: block; width: 100%; padding: 13px; margin: 8px 0; font-size: 18px; font-weight: 700; background: #7a3e9d; color: #fff; text-align: center; }
+.btn.alt { background: #fff; color: #5b2a77; border: 2px solid #b48ccb; font-weight: 600; }
+.btn.ghost { background: transparent; color: #5b2a77; border: 2px dashed #b48ccb; }
+.btn.green { background: #2e8b57; }
+.btn.small { padding: 8px; font-size: 15px; }
+.step-btn { text-align: left !important; font-size: 16px !important; }
+.speak { background: #f0e3f7; color: #5b2a77; padding: 5px 12px; font-size: 14px; margin: 4px 0; }
+.mic { background: #c0392b; color: #fff; width: 100%; padding: 12px; font-size: 17px; font-weight: 700; margin: 6px 0; }
+.inp { width: 100%; font: inherit; padding: 12px; border: 2px solid #d9c6e5; border-radius: 10px; margin: 6px 0; }
+.numrow { display: flex; align-items: center; gap: 8px; font-size: 24px; font-weight: 700; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.person { background: #f7eefb; border-radius: 12px; padding: 10px; text-align: center; font-size: 17px; }
+.notes { font-size: 34px; }
+.formula { background: #f7eefb; border-left: 5px solid #7a3e9d; padding: 8px 10px; margin: 6px 0; font-weight: 700; }
+.qmeta { font-size: 13px; color: #7a3e9d; font-weight: 700; }
+.feedback { border-left: 6px solid #2e8b57; background: #eefaf2; padding: 12px; border-radius: 10px; margin: 10px 0; }
+.feedback.support { border-color: #e8a02e; background: #fff6e5; }
+.alt-exp { border: 2px solid #b48ccb; } .alt-exp.prereq { border-color: #e8a02e; }
+.why { background: #f3f0fa; border-radius: 12px; padding: 12px; margin: 10px 0; font-size: 15px; }
+.delta { margin: 6px 0; font-size: 15px; }
+.mastery { margin: 6px 0; }
+.mrow { display: grid; grid-template-columns: 80px 1fr 44px; align-items: center; gap: 6px; font-size: 14px; margin: 4px 0; }
+.mbar { height: 14px; background: #eee3f3; border-radius: 7px; overflow: hidden; }
+.mbar div { height: 100%; border-radius: 7px; }
+details { background: #fff; border-radius: 10px; padding: 8px 12px; margin: 8px 0; }
+summary { cursor: pointer; font-weight: 600; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+.tbl th, .tbl td { border: 1px solid #e6d9ee; padding: 4px; text-align: center; }
+.review { border-top: 1px dashed #d9c6e5; padding-top: 8px; margin-top: 8px; font-size: 15px; }
+.share { border: 3px solid #7a3e9d; }
