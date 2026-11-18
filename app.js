@@ -22,7 +22,7 @@ function newLearner(name) {
 function logEvent(type, data) { L.log.push({ t: new Date().toLocaleTimeString(), type, ...data }); save(); }
 
 // ---------- UI helpers ----------
-function screen(html) { app.innerHTML = html; window.scrollTo(0, 0); }
+function screen(html) { app.innerHTML = html; app.classList.remove('enter'); void app.offsetWidth; app.classList.add('enter'); window.scrollTo(0, 0); }
 const $ = id => document.getElementById(id);
 function masteryBars(st) {
   return `<div class="mastery">${Object.keys(SKILLS).map(k => `
@@ -35,24 +35,60 @@ const stepTag = (n, name) => `<div class="step">STAR ${n} OF 6 · ${name}</div>`
 // ---------- Home ----------
 function home() {
   const names = Object.keys(DB.learners);
+  const avatars = ['👩🏽', '👩🏾', '👵🏽', '👩🏻', '🧕🏽', '👩🏿'];
   screen(`
-    <div class="big-emoji">🫓💰</div>
-    <h1>Did our papad stall make a profit?</h1>
-    <p>Learn profit %, loss % and discounts with real stall money. The tutor changes the next question to fit <b>you</b>.</p>
-    <div class="card">
-      <label for="nm"><b>Your name</b></label>
-      <input id="nm" class="inp" placeholder="e.g. Kamla" autocomplete="off">
-      <button class="btn" id="start">▶ Start</button>
-      ${names.length ? `<p class="muted">Or continue:</p>${names.map(n => `<button class="btn alt" data-n="${n}">👩 ${n} · ${DB.learners[n].items} questions done</button>`).join('')}` : ''}
-    </div>
-    <button class="btn ghost" id="fac">🧑‍🏫 Facilitator (Didi) dashboard</button>
-  `);
+    <div class="login">
+      <div class="logo-orb">🫓<span>₹</span></div>
+      <h1 class="hero">Munafa Tutor</h1>
+      <p class="hero-sub">Did our papad stall make a profit? Practise profit, loss and discount with your own stall money.</p>
+      <div class="seg" role="tablist">
+        <button class="seg-btn on" data-tab="member" role="tab">👩 I am a member</button>
+        <button class="seg-btn" data-tab="didi" role="tab">🧑‍🏫 I am Didi</button>
+        <span class="seg-pill"></span>
+      </div>
+      <div class="card glass pane" id="pane-member">
+        <p class="lbl">Pick your picture</p>
+        <div class="avatars">${avatars.map((a, i) => `<button class="av ${i === 0 ? 'on' : ''}" data-av="${a}">${a}</button>`).join('')}</div>
+        <div class="field"><input id="nm" class="inp" placeholder=" " autocomplete="off"><label for="nm">Your name</label></div>
+        <button class="btn shine" id="start">Start learning ➜</button>
+        ${names.length ? `<p class="lbl">Continue where you stopped</p><div class="chips">${names.map(n => `
+          <button class="chip-l" data-n="${n}"><span>${DB.learners[n].avatar || '👩🏽'}</span>${n}
+            <small>${Math.round(DB.learners[n].mastery.K2 * 100)}% profit %</small></button>`).join('')}</div>` : ''}
+      </div>
+      <div class="card glass pane hidden" id="pane-didi">
+        <p class="lbl">Facilitator PIN</p>
+        <div class="pin-dots">${[0, 1, 2, 3].map(i => `<span id="d${i}"></span>`).join('')}</div>
+        <div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, '✓'].map(k => `<button class="key" data-k="${k}">${k}</button>`).join('')}</div>
+        <p class="muted center">Demo PIN: 1234</p>
+      </div>
+    </div>`);
+  let av = avatars[0], pin = '';
+  app.querySelectorAll('.seg-btn').forEach(b => b.onclick = () => {
+    app.querySelectorAll('.seg-btn').forEach(x => x.classList.toggle('on', x === b));
+    app.querySelector('.seg').classList.toggle('right', b.dataset.tab === 'didi');
+    $('pane-member').classList.toggle('hidden', b.dataset.tab !== 'member');
+    $('pane-didi').classList.toggle('hidden', b.dataset.tab !== 'didi');
+  });
+  app.querySelectorAll('.av').forEach(b => b.onclick = () => {
+    av = b.dataset.av; app.querySelectorAll('.av').forEach(x => x.classList.toggle('on', x === b));
+  });
   $('start').onclick = () => {
-    const n = $('nm').value.trim(); if (!n) { $('nm').focus(); return; }
-    DB.learners[n] = DB.learners[n] || newLearner(n); L = DB.learners[n]; save(); resume();
+    const n = $('nm').value.trim(); if (!n) { $('nm').focus(); $('nm').parentNode.classList.add('shake'); setTimeout(() => $('nm').parentNode.classList.remove('shake'), 400); return; }
+    DB.learners[n] = DB.learners[n] || newLearner(n); L = DB.learners[n]; L.avatar = L.avatar || av; save(); resume();
   };
+  $('nm').onkeydown = e => { if (e.key === 'Enter') $('start').click(); };
   app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { L = DB.learners[b.dataset.n]; resume(); });
-  $('fac').onclick = facilitatorLogin;
+  const dots = () => [0, 1, 2, 3].forEach(i => $('d' + i).classList.toggle('full', i < pin.length));
+  app.querySelectorAll('.key').forEach(b => b.onclick = () => {
+    const k = b.dataset.k;
+    if (k === '⌫') pin = pin.slice(0, -1);
+    else if (k === '✓' || pin.length >= 3) {
+      if (k !== '✓') pin += k;
+      if (pin === PIN) return dashboard();
+      if (pin.length >= 4 || k === '✓') { app.querySelector('.pin-dots').classList.add('shake'); setTimeout(() => { app.querySelector('.pin-dots').classList.remove('shake'); pin = ''; dots(); }, 400); }
+    } else pin += k;
+    dots();
+  });
 }
 function resume() {
   const notes = DB.reviews.filter(r => r.learner === L.name && r.status !== 'pending' && !r.seen);
@@ -248,13 +284,7 @@ function summary() {
 }
 
 // ---------- Facilitator dashboard (C5 teacher-in-the-loop) ----------
-function facilitatorLogin() {
-  screen(`<h2>🧑‍🏫 Facilitator login</h2><div class="card">
-    <input id="pin" class="inp" type="password" inputmode="numeric" placeholder="PIN (demo: 1234)">
-    <button class="btn" id="go">Open dashboard</button></div><button class="btn alt" id="back">← Back</button>`);
-  $('go').onclick = () => { if ($('pin').value === PIN) dashboard(); else $('pin').value = ''; };
-  $('back').onclick = home;
-}
+function facilitatorLogin() { home(); app.querySelector('[data-tab=didi]').click(); }
 function dashboard() {
   const ls = Object.values(DB.learners);
   const pend = DB.reviews.filter(r => r.status === 'pending');
@@ -300,14 +330,20 @@ function dashboard() {
 
 // ---------- About ----------
 function about() {
-  screen(`<h2>About Munafa Tutor</h2><div class="card">
-    <p>An adaptive tutor for profit, loss and discount, made for women in self-help groups who run market stalls.</p>
+  screen(`<div class="card glass about">
+    <div class="logo-orb small">🫓<span>₹</span></div>
+    <h2 class="center">Munafa Tutor</h2>
+    <p class="center muted">An adaptive tutor for profit, loss and discount, for women in self-help groups who run market stalls.</p>
+    <div class="credit">
+      <div><span>Created by</span><b>Raghuram Gundi</b></div>
+      <div><span>Course</span><b>ET 617</b></div>
+      <div><span>Roll number</span><b>23B1534</b></div>
+    </div>
     <p><b>Exam card:</b> P4 Adaptive tutor · T9 Percentage: profit, loss, discount · L3 Adult SHG learner · C5 Teacher-in-the-loop</p>
-    <p><b>Identity token:</b> 23B1534</p>
-    <p><b>Methods:</b> STAR Legacy inquiry cycle; Bayesian Knowledge Tracing; misconception diagnosis from answers; rubric scoring of explanations; open learner model ("Why this next?"); facilitator approve or override.</p>
-    <p>ET 617 End-Semester Exam, 18 Nov 2026. Plain HTML, CSS and JavaScript. Built with help from Claude (AI), disclosed in the report.</p>
-    <button class="btn alt" id="reset">🗑 Reset all data on this phone</button></div>
-    <button class="btn" id="home">🏠 Home</button>`);
+    <p><b>Methods:</b> STAR Legacy inquiry cycle · Bayesian Knowledge Tracing · misconception diagnosis · rubric scoring of explanations · open learner model ("Why this next?") · facilitator approve or override</p>
+    <p class="muted">ET 617 End-Semester Exam, 18 Nov 2026. Plain HTML, CSS and JavaScript. Built with help from Claude (AI), disclosed in the report.</p>
+    <button class="btn alt" id="reset">🗑 Reset all data on this phone</button>
+    <button class="btn" id="home">🏠 Home</button></div>`);
   $('home').onclick = home;
   $('reset').onclick = () => { DB = { learners: {}, reviews: [] }; save(); home(); };
 }
