@@ -168,12 +168,13 @@ function planner() {
         <div class="field"><input id="pn" class="inp" type="number" inputmode="numeric" placeholder=" " value="${st.packets}"><label for="pn">Packets</label></div></div>
       <p class="lbl">Profit I want: <b id="pv">${st.pct}%</b></p>
       <input id="pp" type="range" min="0" max="60" step="5" value="${st.pct}" class="range">
-      <div id="pout"></div>
     </div>
     <div class="card glass"><p class="lbl">✋ Try it yourself first</p>
-      <p>Before you look below: what price per packet gives this profit?</p>
+      <p>What price per packet gives this profit?</p>
       <div class="numrow"><span>₹</span><input id="guess" class="inp" type="number" inputmode="decimal" step="any" placeholder="your price"></div>
-      <button class="btn small" id="chk">Check my price</button><div id="gfb"></div></div>
+      <button class="btn small" id="chk">Check my price</button><div id="gfb"></div>
+      <button class="btn ghost small" id="show">👀 Just show me the answer</button>
+      <div id="pout" class="hidden"></div></div>
     <button class="btn" id="back">← My profile</button>`);
   const calc = () => {
     const c = +$('pc').value || 0, n = +$('pn').value || 0, p = +$('pp').value;
@@ -187,7 +188,8 @@ function planner() {
     L.plan = { cost: c, packets: n, pct: p }; save();
     return price;
   };
-  ['pc', 'pn', 'pp'].forEach(id => $(id).oninput = calc);
+  ['pc', 'pn', 'pp'].forEach(id => $(id).oninput = () => { calc(); $('pout').classList.add('hidden'); $('gfb').innerHTML = ''; });
+  $('show').onclick = () => { $('pout').classList.remove('hidden'); logEvent('planner-show', {}); };
   calc();
   $('chk').onclick = () => {
     const g = +$('guess').value, price = calc(), c = +$('pc').value, p = +$('pp').value;
@@ -197,7 +199,7 @@ function planner() {
     else if (p > 0 && Math.abs(g - m1) < 0.6) fb = `<div class="feedback support">🤔 ${rs(r1(g))} would make the profit ${p}% of the <b>selling price</b>. Profit % is on the <b>cost</b>: add ${p}% of ${rs(c)}.</div>`;
     else if (g < c) fb = `<div class="feedback support">⚠️ ${rs(r1(g))} is less than the cost ${rs(c)}. That is a <b>loss</b>!</div>`;
     else fb = `<div class="feedback support">Not quite. At ${rs(r1(g))} your profit would be <b>${r1((g - c) / c * 100)}%</b> of the cost. Move the slider and compare.</div>`;
-    $('gfb').innerHTML = fb;
+    $('gfb').innerHTML = fb; $('pout').classList.remove('hidden');
     logEvent('planner', { cost: c, pct: p, guess: g, correct: Math.abs(g - price) < 0.6 });
   };
   $('back').onclick = profile;
