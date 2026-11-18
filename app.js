@@ -405,11 +405,13 @@ function answer(v) {
     fb = `<div class="feedback support">🤔 <b>Not yet, and that is okay.</b><p>${tagMsg}</p></div>`;
   }
   let extra = '';
+  // Viva change: right after a wrong answer, recap the basic concept and formula with this question's numbers
+  if (!correct) extra += recapCard(Q);
   if (d.action === 'alt') {
     const a = (ALT[tag] || ALT.none)(Q);
-    extra = `<div class="card alt-exp"><h3>🔄 ${a.title}</h3><p>${a.body}</p></div>`;
+    extra += `<div class="card alt-exp"><h3>🔄 ${a.title}</h3><p>${a.body}</p></div>`;
   }
-  if (d.action === 'prereq') extra = `<div class="card alt-exp prereq"><h3>🧱 ${PREREQ_LESSON.title}</h3><p>${PREREQ_LESSON.body}</p></div>`;
+  if (d.action === 'prereq') extra += `<div class="card alt-exp prereq"><h3>🧱 ${PREREQ_LESSON.title}</h3><p>${PREREQ_LESSON.body}</p></div>`;
 
   const shown = Q.format === 'spot' ? Q.steps[+v]
     : Q.format === 'mcq' ? (Q.options.find(o => String(o.v) === String(v)) || { t: v }).t : v;
@@ -422,6 +424,25 @@ function answer(v) {
     <button class="btn" id="go">▶ Next</button><button class="btn ghost small" id="toprof">⏸ Stop and go to my profile</button>`);
   $('go').onclick = () => (L.finished ? summary() : tutor());
   $('toprof').onclick = profile;
+}
+
+// ---------- Quick recap of the concept + formula (shown after every wrong answer) ----------
+function recapCard(q) {
+  let concept, formula, worked = '';
+  if (q.skill === 'K2') {
+    concept = `Profit or loss is always compared with the money you <b>spent</b> (cost price), never with the money you got back. "%" means "for every ₹100 you spent".`;
+    formula = `${q.kind[0].toUpperCase() + q.kind.slice(1)} % = ${q.kind} ÷ <u>cost price</u> × 100`;
+    if (q.CP) worked = `Here: ${q.kind} = ${rs(q.amt)} → ${q.amt} ÷ ${q.CP} × 100 = <b>${q.answer === 1 ? r1(q.amt / q.CP * 100) : q.answer}%</b>`;
+  } else if (q.skill === 'K3') {
+    concept = `A discount of d% takes away d rupees <b>for every ₹100</b> of the marked price, not d rupees in total. First find the discount, then subtract it.`;
+    formula = `Final price = marked price − (d ÷ 100 × marked price)`;
+  } else {
+    concept = `"%" means <b>out of 100</b>. To find a % of an amount, split the amount into ₹100 parts and take that many rupees from each part.`;
+    formula = `P% of amount = amount ÷ 100 × P`;
+  }
+  return `<div class="card glass recap"><h3>📘 Quick recap: the basic idea</h3>
+    <p>${concept}</p><div class="formula">${formula}</div>${worked ? `<p>${worked}</p>` : ''}
+    <p class="muted">${q.skill === 'K2' ? 'Kamla\'s stall: bought ₹400, sold ₹500 → profit ₹100 → 100 ÷ 400 × 100 = 25%.' : q.skill === 'K3' ? 'Example: ₹500 box, 10% off → 10% of 500 = ₹50 → pays ₹450.' : 'Example: 10% of ₹400 → 400 ÷ 100 × 10 = ₹40.'}</p></div>`;
 }
 
 // ---------- STAR 6: Go public (summary) ----------

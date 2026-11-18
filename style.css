@@ -169,3 +169,4 @@ summary { cursor: pointer; font-weight: 600; }
 .av { aspect-ratio: 1; width: 100%; }
 .av svg { width: 100%; height: auto; }
 .btn.wa { background: linear-gradient(135deg, #1faa59, #25d366); box-shadow: 0 6px 18px rgba(37,211,102,.35); text-decoration: none; }
+.recap { border: 2px solid rgba(34,160,107,.45); }
