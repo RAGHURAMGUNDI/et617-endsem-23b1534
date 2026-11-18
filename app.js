@@ -22,15 +22,7 @@ function newLearner(name) {
 function logEvent(type, data) { L.log.push({ t: new Date().toLocaleTimeString(), type, ...data }); save(); }
 
 // ---------- UI helpers ----------
-function screen(html) { app.innerHTML = html; window.scrollTo(0, 0); bindSpeak(); }
-function bindSpeak() { app.querySelectorAll('[data-say]').forEach(b => b.onclick = () => speak(b.dataset.say)); }
-function speak(text) {
-  if (!('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, ' ')); u.lang = 'en-IN'; u.rate = 0.9;
-  speechSynthesis.speak(u);
-}
-const sayBtn = t => `<button class="speak" data-say="${t.replace(/<[^>]+>/g, ' ').replace(/"/g, '&quot;')}">🔊 Listen</button>`;
+function screen(html) { app.innerHTML = html; window.scrollTo(0, 0); }
 const $ = id => document.getElementById(id);
 function masteryBars(st) {
   return `<div class="mastery">${Object.keys(SKILLS).map(k => `
@@ -81,18 +73,16 @@ function didiNotes(notes) {
 
 // ---------- STAR 1 + 2: Challenge and Generate ideas ----------
 function challenge() {
-  const t = 'Our group bought papad for 400 rupees and sold it all for 500 rupees. Meena says we made 20 percent profit. Lata says 25 percent. Who is right?';
   screen(`${stepTag(1, 'THE CHALLENGE')}
     <h2>Who is right? 🤔</h2>
     <div class="card"><p>We bought papad for <b>₹400</b> and sold it all for <b>₹500</b>.</p>
       <div class="duo"><div class="person">👩🏽 <b>Meena</b><br>"20% profit"</div><div class="person">👩🏾 <b>Lata</b><br>"25% profit"</div></div>
-      ${sayBtn(t)}</div>
+      </div>
     ${stepTag(2, 'YOUR IDEA')}
     <p><b>What do you think?</b> There is no wrong answer here, just tell us your idea.</p>
     <button class="btn alt" data-c="meena">👩🏽 Meena is right (20%)</button>
     <button class="btn alt" data-c="lata">👩🏾 Lata is right (25%)</button>
     <button class="btn alt" data-c="unsure">🤷 I am not sure</button>`);
-  speak(t);
   app.querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
     L.challenge = b.dataset.c;
     // diagnostic first answer feeds the learner model
@@ -104,7 +94,6 @@ function challenge() {
 
 // ---------- STAR 3: Multiple perspectives ----------
 function perspectives() {
-  const t = 'Meena divided the profit, 100 rupees, by the selling price, 500. Lata divided the 100 rupees by the cost price, 400, the money we started with. Profit percent always compares the profit with the money you put in. So Lata is right: 25 percent.';
   screen(`${stepTag(3, 'TWO WAYS OF THINKING')}
     <h2>How did each of them think?</h2>
     <div class="card"><b>👩🏽 Meena:</b> "Profit = 500 − 400 = ₹100. ₹100 out of <u>₹500</u> = 20%."</div>
@@ -112,14 +101,13 @@ function perspectives() {
     <div class="feedback">Both found the profit (₹100) correctly. The difference is <b>what they compared it with</b>.
       Profit % compares the profit with the money you <b>started with</b> (cost price). So <b>Lata is right: 25%</b>.
       ${L.challenge === 'meena' ? '<p>You thought like Meena. Many sellers do! Now you know the secret: always compare with the cost price.</p>' : ''}
-      ${sayBtn(t)}</div>
+      </div>
     <button class="btn" id="go">▶ Learn the method</button>`);
   $('go').onclick = lesson;
 }
 
 // ---------- STAR 4: Research & revise (short lesson) ----------
 function lesson() {
-  const t = 'Profit percent equals profit divided by cost price, times 100. Loss percent is the same with loss. For a discount, find the percent of the marked price, then take it away.';
   screen(`${stepTag(4, 'LEARN THE METHOD')}
     <h2>The ₹100 secret 💵</h2>
     <div class="card">
@@ -128,7 +116,7 @@ function lesson() {
       <div class="formula">Profit % = profit ÷ <u>cost price</u> × 100</div>
       <div class="formula">Loss % = loss ÷ <u>cost price</u> × 100</div>
       <div class="formula">Discount: final price = marked price − (d% of marked price)</div>
-      ${sayBtn(t)}
+      
     </div>
     <p class="muted">Next, the tutor gives you questions. If you get them right, they get harder. If you get stuck, it explains in a new way.</p>
     <button class="btn" id="go">▶ Start practice</button>`);
@@ -158,7 +146,7 @@ function tutor(preface) {
     ${L.mode === 'prereq' ? '<div class="banner">🧱 Practising the basic step first</div>' : stepTag(5, 'PRACTICE')}
     ${preface || ''}
     <div class="qmeta">${SKILLS[Q.skill].name} · Level ${Q.level} · ${fmtName}</div>
-    <h2>${Q.text}</h2>${sayBtn(Q.text)}
+    <h2>${Q.text}</h2>
     ${input}
     <details class="hint"><summary>💡 Need a hint?</summary>${Q.hint}</details>
     <details class="model"><summary>📊 My progress (what the tutor knows)</summary>${masteryBars(L)}</details>`);
@@ -211,21 +199,21 @@ function answer(v) {
     fb = `<div class="feedback ${evalRes.correct ? '' : 'support'}">
       <b>${evalRes.correct ? '🎉 Good explanation!' : '🤔 Almost there.'}</b> Rubric score ${evalRes.score}/3.
       <p>${evalRes.feedback}</p><p class="muted">⏳ Didi (your facilitator) will also check this answer.</p>
-      <p><b>Model answer:</b> ${Q.solution}</p>${sayBtn(evalRes.feedback)}</div>`;
+      <p><b>Model answer:</b> ${Q.solution}</p></div>`;
   } else if (correct) {
-    fb = `<div class="feedback">🎉 <b>Correct!</b><p>${Q.solution}</p>${sayBtn('Correct! ' + Q.solution)}</div>`;
+    fb = `<div class="feedback">🎉 <b>Correct!</b><p>${Q.solution}</p></div>`;
   } else {
     const tagMsg = { M1: 'It looks like you compared with the <b>selling price</b>. Profit % compares with the money you <b>put in</b>.',
                      M2: 'It looks like you mixed up <b>rupees</b> and <b>percent</b>.',
                      P: 'The "% of an amount" step needs practice.' }[tag] || 'Not quite.';
-    fb = `<div class="feedback support">🤔 <b>Not yet, and that is okay.</b><p>${tagMsg}</p>${sayBtn(tagMsg)}</div>`;
+    fb = `<div class="feedback support">🤔 <b>Not yet, and that is okay.</b><p>${tagMsg}</p></div>`;
   }
   let extra = '';
   if (d.action === 'alt') {
     const a = (ALT[tag] || ALT.none)(Q);
-    extra = `<div class="card alt-exp"><h3>🔄 ${a.title}</h3><p>${a.body}</p>${sayBtn(a.title + '. ' + a.body)}</div>`;
+    extra = `<div class="card alt-exp"><h3>🔄 ${a.title}</h3><p>${a.body}</p></div>`;
   }
-  if (d.action === 'prereq') extra = `<div class="card alt-exp prereq"><h3>🧱 ${PREREQ_LESSON.title}</h3><p>${PREREQ_LESSON.body}</p>${sayBtn(PREREQ_LESSON.body)}</div>`;
+  if (d.action === 'prereq') extra = `<div class="card alt-exp prereq"><h3>🧱 ${PREREQ_LESSON.title}</h3><p>${PREREQ_LESSON.body}</p></div>`;
 
   const shown = Q.format === 'spot' ? Q.steps[+v]
     : Q.format === 'mcq' ? (Q.options.find(o => String(o.v) === String(v)) || { t: v }).t : v;
