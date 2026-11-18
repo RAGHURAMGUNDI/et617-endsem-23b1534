@@ -180,11 +180,13 @@ function planner() {
     const c = +$('pc').value || 0, n = +$('pn').value || 0, p = +$('pp').value;
     $('pv').textContent = p + '%';
     const price = c + c * p / 100, tot = price * n, prof = tot - c * n;
+    const waText = `🧾 Price plan from Munafa Tutor\nCost of 1 packet: ₹${c}\nProfit wanted: ${p}%\nSell at: ₹${r1(price)} each\n${n} packets → ₹${r1(tot)} (profit ₹${r1(prof)})`;
     $('pout').innerHTML = c > 0 ? `<div class="plan-out">
         <div><span>Sell 1 packet at</span><b>${rs(r1(price))}</b></div>
         <div><span>All ${n} packets bring</span><b>${rs(r1(tot))}</b></div>
         <div><span>Your profit</span><b>${rs(r1(prof))}</b></div></div>
-      <p class="muted">Why: ${p}% of the cost ${rs(c)} = ${rs(r1(c * p / 100))}, so price = ${c} + ${r1(c * p / 100)}. We add the % of the <b>cost</b>, never of the price.</p>` : '';
+      <p class="muted">Why: ${p}% of the cost ${rs(c)} = ${rs(r1(c * p / 100))}, so price = ${c} + ${r1(c * p / 100)}. We add the % of the <b>cost</b>, never of the price.</p>
+      <a class="btn wa small" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(waText)}">📲 Send this plan to my group</a>` : '';
     L.plan = { cost: c, packets: n, pct: p }; save();
     return price;
   };
@@ -437,10 +439,15 @@ function summary() {
       ${L.myStall && L.myStall.CP !== L.myStall.SP ? `<p>🧺 Your stall: spent ${rs(L.myStall.CP)}, sold ${rs(L.myStall.SP)} → <b>${L.myStall.SP > L.myStall.CP ? 'profit' : 'loss'} ${r1(Math.abs(L.myStall.SP - L.myStall.CP) / L.myStall.CP * 100)}%</b></p>` : ''}
     </div>
     <p class="muted">Show this card at the next group meeting and explain one question to a friend. Teaching others is the best test!</p>
+    <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(
+      `🫓 ${L.name}'s stall maths card (Munafa Tutor)\n✅ ${L.correct} of ${L.items} right\n` +
+      Object.keys(SKILLS).map(k => `• ${SKILLS[k].name}: ${Math.round(L.mastery[k] * 100)}%`).join('\n') +
+      `\n🔑 Profit % = profit ÷ COST price × 100\nTry it: https://et617-23b1534.vercel.app`)}" id="wa">📲 Share my card on WhatsApp</a>
     <button class="btn" id="more">🔁 Practise more</button>
     <button class="btn alt" id="rep">📊 See my full report</button>
     <button class="btn alt" id="home">👤 My profile</button>`);
   $('rep').onclick = report;
+  $('wa').onclick = () => logEvent('share', { what: 'card' });
   $('more').onclick = () => { L.finished = false; L.items = Math.min(L.items, 8); save(); tutor(); };
   $('home').onclick = profile;
 }
