@@ -17,7 +17,7 @@ function newLearner(name) {
   return { name, mastery: { K1: 0.6, K2: 0.15, K3: 0.2 }, level: { K1: 1, K2: 1, K3: 1 },
     wrongStreak: { K1: 0, K2: 0, K3: 0 }, attempts: { K1: 0, K2: 0, K3: 0 },
     misc: { M1: 0, M2: 0, P: 0 }, skill: 'K2', mode: 'main', returnSkill: null,
-    items: 0, correct: 0, log: [], challenge: null, finished: false };
+    items: 0, correct: 0, log: [], challenge: null, finished: false, pin: null, sessions: [], hist: [] };
 }
 function logEvent(type, data) { L.log.push({ t: new Date().toLocaleTimeString(), type, ...data }); save(); }
 
@@ -50,8 +50,9 @@ function home() {
         <p class="lbl">Pick your picture</p>
         <div class="avatars">${avatars.map((a, i) => `<button class="av ${i === 0 ? 'on' : ''}" data-av="${a}">${a}</button>`).join('')}</div>
         <div class="field"><input id="nm" class="inp" placeholder=" " autocomplete="off"><label for="nm">Your name</label></div>
+        <div class="field"><input id="mypin" class="inp" type="password" inputmode="numeric" maxlength="4" placeholder=" "><label for="mypin">Make a 4-digit PIN (to log in next time)</label></div>
         <button class="btn shine" id="start">Start learning ➜</button>
-        ${names.length ? `<p class="lbl">Continue where you stopped</p><div class="chips">${names.map(n => `
+        ${names.length ? `<p class="lbl">Welcome back, tap your name</p><div class="chips">${names.map(n => `
           <button class="chip-l" data-n="${n}"><span>${DB.learners[n].avatar || '👩🏽'}</span>${n}
             <small>${Math.round(DB.learners[n].mastery.K2 * 100)}% profit %</small></button>`).join('')}</div>` : ''}
       </div>
@@ -73,11 +74,15 @@ function home() {
     av = b.dataset.av; app.querySelectorAll('.av').forEach(x => x.classList.toggle('on', x === b));
   });
   $('start').onclick = () => {
-    const n = $('nm').value.trim(); if (!n) { $('nm').focus(); $('nm').parentNode.classList.add('shake'); setTimeout(() => $('nm').parentNode.classList.remove('shake'), 400); return; }
-    DB.learners[n] = DB.learners[n] || newLearner(n); L = DB.learners[n]; L.avatar = L.avatar || av; save(); resume();
+    const n = $('nm').value.trim(), pn = $('mypin').value.trim();
+    const bad = el => { el.focus(); el.parentNode.classList.add('shake'); setTimeout(() => el.parentNode.classList.remove('shake'), 400); };
+    if (!n) return bad($('nm'));
+    if (DB.learners[n]) return memberLogin(n);           // already registered → PIN login
+    if (!/^\d{4}$/.test(pn)) return bad($('mypin'));
+    DB.learners[n] = newLearner(n); L = DB.learners[n]; L.avatar = av; L.pin = pn; save(); startSession();
   };
   $('nm').onkeydown = e => { if (e.key === 'Enter') $('start').click(); };
-  app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { L = DB.learners[b.dataset.n]; resume(); });
+  app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => memberLogin(b.dataset.n));
   const dots = () => [0, 1, 2, 3].forEach(i => $('d' + i).classList.toggle('full', i < pin.length));
   app.querySelectorAll('.key').forEach(b => b.onclick = () => {
     const k = b.dataset.k;
@@ -93,18 +98,108 @@ function home() {
 function resume() {
   const notes = DB.reviews.filter(r => r.learner === L.name && r.status !== 'pending' && !r.seen);
   if (notes.length) return didiNotes(notes);
-  if (!L.challenge) return challenge();
-  if (L.finished) return summary();
-  tutor();
+  profile();
 }
-function didiNotes(notes) {
+function startSession() { L.sessions = L.sessions || []; L.sessions.push(new Date().toISOString()); save(); resume(); }
+
+// ---------- Returning learner: PIN login ----------
+function memberLogin(name) {
+  const m = DB.learners[name];
+  if (!m.pin) { L = m; return startSession(); }       // older profile without PIN
+  screen(`<div class="card glass center">
+    <div class="avatar-big">${m.avatar || '👩🏽'}</div><h2>Welcome back, ${m.name}!</h2>
+    <p class="lbl">Enter your 4-digit PIN</p>
+    <div class="pin-dots">${[0, 1, 2, 3].map(i => `<span id="d${i}"></span>`).join('')}</div>
+    <div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, '←'].map(k => `<button class="key" data-k="${k}">${k}</button>`).join('')}</div>
+    <p class="muted">Forgot your PIN? Ask Didi.</p></div>`);
+  let pin = '';
+  const dots = () => [0, 1, 2, 3].forEach(i => $('d' + i).classList.toggle('full', i < pin.length));
+  app.querySelectorAll('.key').forEach(b => b.onclick = () => {
+    const k = b.dataset.k;
+    if (k === '←') return home();
+    if (k === '⌫') pin = pin.slice(0, -1); else if (pin.length < 4) pin += k;
+    dots();
+    if (pin.length === 4) {
+      if (pin === m.pin) { L = m; startSession(); }
+      else { app.querySelector('.pin-dots').classList.add('shake'); setTimeout(() => { pin = ''; dots(); app.querySelector('.pin-dots').classList.remove('shake'); }, 400); }
+    }
+  });
+}
+
+// ---------- Learner profile hub ----------
+function profile() {
+  const acc = L.items ? Math.round(L.correct / L.items * 100) : 0;
+  const days = new Set((L.sessions || []).map(d => d.slice(0, 10))).size;
+  const notes = DB.reviews.filter(r => r.learner === L.name);
+  const weakest = Object.keys(SKILLS).reduce((a, k) => L.mastery[k] < L.mastery[a] ? k : a, 'K2');
+  screen(`
+    <div class="card glass profile-head">
+      <div class="avatar-big">${L.avatar || '👩🏽'}</div>
+      <div><h2>${L.name}</h2><p class="muted">Ujala Mahila Bachat Gat · member</p></div>
+      <button class="chip-out" id="out">Log out</button>
+    </div>
+    <div class="stats">
+      <div><b>${L.items}</b><span>questions</span></div>
+      <div><b>${acc}%</b><span>right</span></div>
+      <div><b>${days}</b><span>days practised</span></div>
+    </div>
+    <div class="card glass"><p class="lbl">My skills</p>${masteryBars(L)}
+      <p class="muted">💡 Next focus: <b>${SKILLS[weakest].name}</b></p></div>
+    <button class="btn shine" id="lesson">📘 Take lesson ${L.challenge ? '<small>(again)</small>' : '<span class="badge">START HERE</span>'}</button>
+    <button class="btn ${L.challenge ? '' : 'alt'}" id="practice">🎯 Practise ${L.challenge ? '' : '<small>(after the lesson)</small>'}</button>
+    <button class="btn alt" id="rep">📊 My report</button>
+    ${notes.length ? `<button class="btn alt" id="notes">💬 Didi's notes (${notes.filter(r => r.status !== 'pending').length} checked · ${notes.filter(r => r.status === 'pending').length} waiting)</button>` : ''}
+  `);
+  $('out').onclick = () => { L = null; home(); };
+  $('lesson').onclick = challenge;
+  $('practice').onclick = () => { if (!L.challenge) return challenge(); if (L.finished) { L.finished = false; L.items = Math.min(L.items, 8); } tutor(); };
+  $('rep').onclick = report;
+  if ($('notes')) $('notes').onclick = () => didiNotes(notes.filter(r => r.status !== 'pending'), true);
+}
+
+// ---------- Learner report ----------
+function report() {
+  const ans = L.log.filter(e => e.type === 'answer');
+  const by = (key) => { const m = {}; ans.forEach(e => { m[e[key]] = m[e[key]] || { n: 0, c: 0 }; m[e[key]].n++; if (e.correct) m[e[key]].c++; }); return m; };
+  const bySkill = by('skill'), byFmt = by('format');
+  const fmtName = { mcq: 'Choose one', num: 'Type the number', spot: 'Find the mistake', explain: 'Explain' };
+  const H = L.hist || [];
+  const W = 320, Ht = 120;
+  const line = k => H.length < 2 ? '' : `<polyline fill="none" stroke-width="3" stroke-linecap="round" stroke="${{ K1: '#f59e0b', K2: '#7a3ee0', K3: '#22a06b' }[k]}"
+      points="${H.map((h, i) => `${(i / (H.length - 1)) * W},${Ht - h[k] * Ht}`).join(' ')}"/>`;
+  const hints = ans.filter(e => e.hint).length, avgSec = ans.length ? Math.round(ans.reduce((a, e) => a + (e.secs || 0), 0) / ans.length) : 0;
+  screen(`
+    <div class="step">MY REPORT</div><h2>${L.avatar || ''} ${L.name}'s progress</h2>
+    <div class="card glass"><p class="lbl">Mastery over time</p>
+      ${H.length < 2 ? '<p class="muted">Answer a few questions to see your line grow.</p>' : `
+      <svg viewBox="0 0 ${W} ${Ht}" class="chart">${[0.5, 0.8].map(y => `<line x1="0" x2="${W}" y1="${Ht - y * Ht}" y2="${Ht - y * Ht}" stroke="#bbb" stroke-dasharray="4 4"/>`).join('')}
+        ${line('K1')}${line('K2')}${line('K3')}</svg>
+      <p class="legend"><span style="color:#f59e0b">● % of ₹</span> <span style="color:#7a3ee0">● Profit %</span> <span style="color:#22a06b">● Discount</span> · dashed lines = 50% and 80%</p>`}
+    </div>
+    <div class="card glass"><p class="lbl">By skill</p>
+      <table class="tbl"><tr><th>Skill</th><th>Mastery</th><th>Right</th><th>Level</th></tr>
+      ${Object.keys(SKILLS).map(k => `<tr><td>${SKILLS[k].name}</td><td>${Math.round(L.mastery[k] * 100)}%</td><td>${bySkill[k] ? bySkill[k].c + '/' + bySkill[k].n : '–'}</td><td>${L.level[k]}</td></tr>`).join('')}</table></div>
+    <div class="card glass"><p class="lbl">By question type</p>
+      <table class="tbl"><tr><th>Type</th><th>Right</th></tr>${Object.keys(byFmt).map(f => `<tr><td>${fmtName[f]}</td><td>${byFmt[f].c}/${byFmt[f].n}</td></tr>`).join('') || '<tr><td colspan="2">No answers yet</td></tr>'}</table>
+      <p class="muted">💡 Hints used: ${hints} · ⏱ average ${avgSec} s per question</p></div>
+    <div class="card glass"><p class="lbl">Mistakes to watch</p>
+      <p>📉 Dividing by the selling price (M1): <b>${L.misc.M1}</b> times</p>
+      <p>💱 Mixing up ₹ and % (M2): <b>${L.misc.M2}</b> times</p>
+      <p>🧱 Basic "% of ₹" step: <b>${L.misc.P}</b> times</p>
+      ${L.misc.M1 > L.misc.M2 ? '<p class="muted">Tip: always ask "how much did we SPEND?" and divide by that.</p>' : L.misc.M2 ? '<p class="muted">Tip: ₹ is money; % means "for every ₹100".</p>' : ''}</div>
+    <div class="card glass"><p class="lbl">Last answers</p>
+      ${ans.slice(-6).reverse().map(e => `<p class="recent">${e.correct ? '✅' : '🔸'} ${SKILLS[e.skill].short} L${e.level} · ${fmtName[e.format]} · <i>${e.action}</i></p>`).join('') || '<p class="muted">None yet</p>'}</div>
+    <button class="btn" id="back">← My profile</button>`);
+  $('back').onclick = profile;
+}
+function didiNotes(notes, fromProfile) {
   screen(`<h2>💬 Didi checked your answers</h2>
     ${notes.map(r => `<div class="feedback ${r.finalCorrect ? '' : 'support'}">
       <p class="muted">Your explanation: “${r.text}”</p>
       <p>${r.status === 'approved' ? '✔ Didi agreed with the tutor:' : '✏️ Didi\'s own feedback:'} <b>${r.finalFeedback}</b></p></div>`).join('')}
     <button class="btn" id="ok">▶ Continue</button>`);
   notes.forEach(r => r.seen = true); save();
-  $('ok').onclick = () => { if (!L.challenge) challenge(); else if (L.finished) summary(); else tutor(); };
+  $('ok').onclick = profile;
 }
 
 // ---------- STAR 1 + 2: Challenge and Generate ideas ----------
@@ -195,7 +290,9 @@ function tutor(preface) {
     <h2>${Q.text}</h2>
     ${input}
     <details class="hint"><summary>💡 Need a hint?</summary>${Q.hint}</details>
-    <details class="model"><summary>📊 My progress (what the tutor knows)</summary>${masteryBars(L)}</details>`);
+    <details class="model"><summary>📊 My progress (what the tutor knows)</summary>${masteryBars(L)}</details>
+    <button class="btn ghost small" id="toprof">⏸ Stop and go to my profile</button>`);
+  $('toprof').onclick = profile;
   app.querySelectorAll('[data-v]').forEach(b => b.onclick = () => answer(b.dataset.v));
   if ($('sub')) $('sub').onclick = () => { const v = $('ans').value.trim(); if (v) answer(v); };
   if ($('mic')) $('mic').onclick = dictate;
@@ -226,6 +323,7 @@ function answer(v) {
   L.attempts[k]++; L.items++; if (correct) { L.correct++; L.wrongStreak[k] = 0; } else L.wrongStreak[k]++;
   if (tag) L.misc[tag]++;
   const d = decide(L, Q, correct, tag);
+  L.hist = L.hist || []; L.hist.push({ ...L.mastery });
   logEvent('answer', { skill: k, level: Q.level, format: Q.format, given: String(v).slice(0, 80), correct, tag,
     secs: Math.round(Q.secs), hint: Q.hintUsed, own: Q.text.startsWith('🧺'),
     before: Math.round(before * 100), after: Math.round(L.mastery[k] * 100), action: d.action });
@@ -271,8 +369,9 @@ function answer(v) {
     <div class="why"><b>🧭 Why this next?</b> ${d.reason}<br>${next}
       <div class="delta">${SKILLS[k].short} mastery: ${Math.round(before * 100)}% → <b>${Math.round(L.mastery[k] * 100)}%</b></div>
       ${masteryBars(L)}</div>
-    <button class="btn" id="go">▶ Next</button>`);
+    <button class="btn" id="go">▶ Next</button><button class="btn ghost small" id="toprof">⏸ Stop and go to my profile</button>`);
   $('go').onclick = () => (L.finished ? summary() : tutor());
+  $('toprof').onclick = profile;
 }
 
 // ---------- STAR 6: Go public (summary) ----------
@@ -291,9 +390,11 @@ function summary() {
     </div>
     <p class="muted">Show this card at the next group meeting and explain one question to a friend. Teaching others is the best test!</p>
     <button class="btn" id="more">🔁 Practise more</button>
-    <button class="btn alt" id="home">🏠 Home</button>`);
+    <button class="btn alt" id="rep">📊 See my full report</button>
+    <button class="btn alt" id="home">👤 My profile</button>`);
+  $('rep').onclick = report;
   $('more').onclick = () => { L.finished = false; L.items = Math.min(L.items, 8); save(); tutor(); };
-  $('home').onclick = home;
+  $('home').onclick = profile;
 }
 
 // ---------- Facilitator dashboard (C5 teacher-in-the-loop) ----------
@@ -305,9 +406,9 @@ function dashboard() {
   const tot = ls.reduce((a, l) => ({ M1: a.M1 + l.misc.M1, M2: a.M2 + l.misc.M2, P: a.P + l.misc.P }), { M1: 0, M2: 0, P: 0 });
   screen(`<h2>🧑‍🏫 Didi's dashboard</h2>
     <div class="card"><b>Group mastery (BKT estimate)</b>
-      <table class="tbl"><tr><th>Member</th><th>% of ₹</th><th>Profit %</th><th>Discount</th><th>Right</th><th>Now on</th></tr>
+      <table class="tbl"><tr><th>Member</th><th>% of ₹</th><th>Profit %</th><th>Discount</th><th>Right</th><th>Days</th><th>Now on</th></tr>
       ${ls.map(l => `<tr><td>${l.name}</td>${cell(l.mastery.K1)}${cell(l.mastery.K2)}${cell(l.mastery.K3)}
-        <td>${l.correct}/${l.items}</td><td>${l.mode === 'prereq' ? '🧱 basics' : SKILLS[l.skill].short}</td></tr>`).join('') || '<tr><td colspan="6">No members yet</td></tr>'}</table>
+        <td>${l.correct}/${l.items}</td><td>${new Set((l.sessions || []).map(d => d.slice(0, 10))).size}</td><td>${l.mode === 'prereq' ? '🧱 basics' : SKILLS[l.skill].short}</td></tr>`).join('') || '<tr><td colspan="7">No members yet</td></tr>'}</table>
       <p class="muted">Green ≥ 90% mastered · light green ≥ 80% · orange ≥ 50% · red &lt; 50%</p></div>
     <div class="card"><b>Misconceptions seen in the group</b>
       <p>M1 "profit % on the selling price": <b>${tot.M1}</b> · M2 "₹ = %": <b>${tot.M2}</b> · Basic "% of ₹" gaps: <b>${tot.P}</b></p>
@@ -370,5 +471,5 @@ function about() {
 }
 
 document.getElementById('aboutLink').onclick = e => { e.preventDefault(); about(); };
-document.getElementById('homeLink').onclick = e => { e.preventDefault(); home(); };
+document.getElementById('homeLink').onclick = e => { e.preventDefault(); L ? profile() : home(); };
 home();
