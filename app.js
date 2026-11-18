@@ -35,22 +35,22 @@ const stepTag = (n, name) => `<div class="step">STAR ${n} OF 6 · ${name}</div>`
 // ---------- Home ----------
 function home() {
   const names = Object.keys(DB.learners);
-  const avatars = ['👩🏽', '👩🏾', '👵🏽', '👩🏻', '🧕🏽', '👩🏿'];
+  const avatars = ['👩🏽', '👩🏾', '👩🏽‍🦱', '👵🏽', '🧕🏽', '👵🏾']; // brown skin tones, younger and older women
   screen(`
     <div class="login">
       <div class="logo-orb">🫓<span>₹</span></div>
       <h1 class="hero">Munafa Tutor</h1>
       <p class="hero-sub">Did our papad stall make a profit? Practise profit, loss and discount with your own stall money.</p>
       <div class="seg" role="tablist">
-        <button class="seg-btn on" data-tab="member" role="tab">👩 I am a member</button>
-        <button class="seg-btn" data-tab="didi" role="tab">🧑‍🏫 I am Didi</button>
+        <button class="seg-btn on" data-tab="member" role="tab">👩🏽 I am a member</button>
+        <button class="seg-btn" data-tab="didi" role="tab">👩🏽‍🏫 I am Didi</button>
         <span class="seg-pill"></span>
       </div>
       <div class="card glass pane" id="pane-member">
         <p class="lbl">Pick your picture</p>
         <div class="avatars">${avatars.map((a, i) => `<button class="av ${i === 0 ? 'on' : ''}" data-av="${a}">${a}</button>`).join('')}</div>
         <div class="field"><input id="nm" class="inp" placeholder=" " autocomplete="off"><label for="nm">Your name</label></div>
-        <div class="field"><input id="mypin" class="inp" type="password" inputmode="numeric" maxlength="4" placeholder=" "><label for="mypin">Make a 4-digit PIN (to log in next time)</label></div>
+        <div class="field"><input id="mypin" class="inp" type="password" inputmode="numeric" maxlength="4" placeholder=" "><label for="mypin">Make a 4-digit PIN</label></div>
         <button class="btn shine" id="start">Start learning ➜</button>
         ${names.length ? `<p class="lbl">Welcome back, tap your name</p><div class="chips">${names.map(n => `
           <button class="chip-l" data-n="${n}"><span>${DB.learners[n].avatar || '👩🏽'}</span>${n}
@@ -452,7 +452,7 @@ function dashboard() {
   const pend = DB.reviews.filter(r => r.status === 'pending');
   const cell = v => `<td style="background:${v >= MASTERED ? '#c8e6c9' : v >= LEVEL_UP ? '#dcedc8' : v >= PREREQ_WEAK ? '#ffe0b2' : '#ffcdd2'}">${Math.round(v * 100)}%</td>`;
   const tot = ls.reduce((a, l) => ({ M1: a.M1 + l.misc.M1, M2: a.M2 + l.misc.M2, P: a.P + l.misc.P }), { M1: 0, M2: 0, P: 0 });
-  screen(`<h2>🧑‍🏫 Didi's dashboard</h2>
+  screen(`<h2>👩🏽‍🏫 Didi's dashboard</h2>
     <div class="card"><b>Group mastery (BKT estimate)</b>
       <table class="tbl"><tr><th>Member</th><th>% of ₹</th><th>Profit %</th><th>Discount</th><th>Right</th><th>Days</th><th>Now on</th></tr>
       ${ls.map(l => `<tr><td>${l.name}</td>${cell(l.mastery.K1)}${cell(l.mastery.K2)}${cell(l.mastery.K3)}
