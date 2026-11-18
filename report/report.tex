@@ -1,0 +1,177 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2.1cm]{geometry}
+\usepackage{booktabs,tabularx,array,graphicx,float,enumitem,xcolor,listings,caption,subcaption}
+\usepackage{amsmath}
+\usepackage[hidelinks]{hyperref}
+\setlist{nosep,leftmargin=1.4em}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.18}
+\captionsetup{font=small,labelfont=bf}
+\lstset{basicstyle=\ttfamily\small,frame=single,framerule=0.3pt,columns=fullflexible,keepspaces=true,xleftmargin=4pt,xrightmargin=4pt}
+\newcommand{\Rs}{Rs.\,}
+\newcommand{\shot}[2]{\begin{subfigure}[t]{0.235\textwidth}\centering\includegraphics[width=\linewidth]{#1}\caption*{#2}\end{subfigure}}
+
+\title{\textbf{Munafa Tutor}\\[2pt]\large An Adaptive Tutor for Profit, Loss and Discount\\ for Self-Help-Group Stall Sellers}
+\author{Raghuram Gundi \quad (Roll No.\ 23B1534)\\ ET 617 --- End-Semester Examination}
+\date{18 November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Munafa Tutor is a web-based adaptive tutor for women in self-help groups (SHGs) who sell papad at weekly markets. It generates profit, loss and discount questions automatically, tracks mastery with Bayesian Knowledge Tracing, diagnoses two specific misconceptions from the learner's exact answers, and chooses between a harder question, an alternative explanation and prerequisite instruction using an explicit decision rule. A facilitator dashboard places the SHG facilitator in the loop to approve or override the tutor's feedback. The session follows the STAR Legacy inquiry cycle.
+\end{abstract}
+
+\section*{Identity Card}
+\begin{tabularx}{\linewidth}{@{}lY@{}}
+\toprule
+Roll no.\ (ID) & 23B1534 \\
+P -- Problem & P4 -- Adaptive tutor with automatic question generation \\
+T -- Topic & P4-T9 -- Percentage: profit, loss, discount (Class 8) \\
+L -- Learner context & L3 -- Adult learner (25--45) in a self-help group; low print literacy; comfortable with WhatsApp voice notes \\
+C -- Design constraint & C5 -- Teacher-in-the-loop: a teacher view shows learner progress and lets the teacher approve or override AI feedback \\
+Live app & \url{https://et617-23b1534.vercel.app} \\
+Repository & \url{https://github.com/RAGHURAMGUNDI/et617-endsem-23b1534} \\
+\bottomrule
+\end{tabularx}
+
+\section{Educational Problem (D1)}
+Members of a women's SHG sell papad and pickles at a weekly market. They know whether money came in, but cannot judge how good a deal was: they compute profit percentage on the selling price, confuse a rupee profit with a percentage profit, and accept wholesalers' ``20\% discount'' offers without checking the final price. Wrong percentages lead to wrong pricing, and the group may sell at a loss without noticing. Members have low print literacy, so textbook word problems do not reach them, and the facilitator (``Didi'') has no time to check every member's practice.
+
+\paragraph{Learning outcomes.} After two to three sessions the learner will be able to:
+\begin{enumerate}
+\item \textbf{Calculate} profit or loss and profit or loss percentage from cost price (CP) and selling price (SP), using CP as the base.
+\item \textbf{Compute} the final price after a discount and \textbf{compare} two offers (e.g.\ ``\Rs 50 off'' vs.\ ``15\% off'').
+\item \textbf{Explain} why profit percentage is divided by the cost price, and \textbf{identify} the error in a worked calculation.
+\end{enumerate}
+\paragraph{Context of use.} The SHG's shared Android phone (Chrome), 10--15 minutes per member after the weekly meeting; the facilitator reviews the dashboard on the same phone.
+
+\section{Learner Persona (D2)}
+\begin{tabularx}{\linewidth}{@{}lY@{}}
+\toprule
+Name, age & Kamla Devi, 38; member of \emph{Ujala Mahila Bachat Gat}, Pune; runs the group's papad stall \\
+Literacy & Studied to Class 3; reads numbers and short words; prefers voice notes \\
+Prior knowledge & Fluent mental addition and subtraction of rupees; halves and quarters; knows ``10\% = one-tenth'' from bank interest; has never used a formula \\
+Misconception M1 & \emph{Profit \% is computed on the selling price.} Bought \Rs 400, sold \Rs 500 $\Rightarrow$ $100/500 = 20\%$ (correct: 25\%). \\
+Misconception M2 & \emph{A rupee profit equals a percentage profit.} ``We earned \Rs 20, so it is 20\% profit''; ``\Rs 15 off equals 15\% off''. \\
+Device / time & Shared Android phone; 10--15 minutes after the meeting \\
+Language & Simple spoken English and Marathi; short sentences, rupee amounts, illustrated faces, voice dictation \\
+Motivation & More income for the stall; not being cheated by wholesalers; pride in explaining to the group \\
+\bottomrule
+\end{tabularx}
+
+\section{Educational Content (D3)}
+\subsection{Learning activity: the STAR Legacy cycle}
+\begin{tabularx}{\linewidth}{@{}lY@{}}
+\toprule
+\textbf{Phase} & \textbf{Implementation} \\ \midrule
+1. Challenge & ``We bought papad for \Rs 400 and sold it for \Rs 500. Meena says 20\% profit, Lata says 25\%. Who is right?'' \\
+2. Generate ideas & The learner chooses Meena, Lata or ``not sure''; this is a diagnostic (choosing Meena logs M1). \\
+3. Multiple perspectives & Both methods side by side: both found the profit correctly; they differ in the base. \\
+4. Research \& revise & The ``\Rs 100 secret'': \Rs 400 is four notes of \Rs 100; \Rs 100 profit over four notes is \Rs 25 per \Rs 100, i.e.\ 25\%. \\
+5. Test your mettle & The adaptive tutor (Section~\ref{sec:tutor}). \\
+6. Go public & A summary card shared with the group on WhatsApp. \\ \bottomrule
+\end{tabularx}
+
+\subsection{Concept}
+\[
+\text{Profit \%} = \frac{\text{SP} - \text{CP}}{\text{CP}} \times 100, \qquad
+\text{Loss \%} = \frac{\text{CP} - \text{SP}}{\text{CP}} \times 100, \qquad
+\text{Final price} = \text{MP} - \frac{d}{100}\,\text{MP}.
+\]
+
+\subsection{Skills, levels and formats}
+Three skills: \textbf{K1} percent of an amount (prerequisite), \textbf{K2} profit/loss percentage, \textbf{K3} discount and final price. Each has three levels (L1 round numbers; L2 profit or loss with non-round values; L3 multi-step, e.g.\ 40 packets at \Rs 25 sold at \Rs 30 each, or comparing ``\Rs 60 off'' with ``15\% off''). Four formats: multiple choice with misconception distractors, numeric entry, spot-the-mistake, and free-text explanation.
+
+\begin{table}[H]\small
+\begin{tabularx}{\linewidth}{@{}p{0.27\linewidth}lYY@{}}
+\toprule
+\textbf{Generated task (format)} & \textbf{Answer} & \textbf{Feedback: correct} & \textbf{Feedback: misconception} \\ \midrule
+Bought \Rs 200, sold \Rs 220. Profit \%? (MCQ: 10 / 9.1 / 20 / 15) & 10\% & ``Profit = \Rs 20; $20 \div 200 \times 100 = 10\%$.'' & 9.1 $\to$ M1: ``You compared with the selling price\ldots'' + \Rs 100-notes explanation; 20 $\to$ M2: ``rupees vs.\ percent'' \\
+Bought \Rs 300, sold \Rs 240. Loss \%? (numeric) & 20\% & ``Loss = \Rs 60; $60\div300\times100=20\%$.'' & 25 $\to$ M1; 60 $\to$ M2 \\
+Shabana's working: Step 2 divides by SP. Tap the wrong step. (spot) & Step 2 & ``Step 2 divides by \Rs 500; it must divide by \Rs 400: 25\%.'' & Step 1 $\to$ M2 \\
+``How do I find the profit \%?'' (explain) & rubric 3/3 & ``You found the profit; used the cost price; turned it into out of 100.'' & ``You divided by the selling price. Divide by the cost price.'' \\
+Marked \Rs 360, 25\% off. Final price? (numeric) & \Rs 270 & ``Discount = \Rs 90; $360-90=270$.'' & \Rs 335 $\to$ M2: ``10\% off takes \Rs 10 for every \Rs 100'' \\
+\Rs 500 sack: \Rs 60 off vs.\ 15\% off. Lower price? (MCQ, L3) & B & ``A: \Rs 440; B: \Rs 425.'' & A $\to$ M2 explanation \\ \bottomrule
+\end{tabularx}
+\caption{Examples of generated tasks with model answers and feedback for correct responses and for M1/M2.}
+\end{table}
+
+\section{Working Application (D4)}
+\textbf{URL:} \url{https://et617-23b1534.vercel.app}. Plain HTML, CSS and JavaScript; no template or UI library. \texttt{engine.js} contains the tutor logic, \texttt{app.js} the screens, \texttt{faces.js} original SVG illustrations of Indian women, \texttt{style.css} the interface. Data is stored per member on the shared phone. The identity token appears in the footer of every screen and on the About screen.
+
+\paragraph{Screen map.} Login (new member: picture, name, own 4-digit PIN; returning member: name and PIN keypad; facilitator: PIN keypad) $\to$ Profile hub (statistics, skill bars, next focus; Take lesson, Practise, My report, Price planner, Didi's notes) $\to$ Challenge $\to$ Perspectives $\to$ Lesson $\to$ Question $\to$ Feedback with ``Why this next?'' (harder / alternative explanation / prerequisite) $\to$ Summary (share on WhatsApp). Side screens: Learner report, Price planner, Facilitator dashboard, About.
+
+\paragraph{C5 implemented.} Every scored explanation is queued for the facilitator with the tutor's rubric score and feedback. She can \emph{approve} it or \emph{override} it with her own feedback and correctness judgement; an override also updates the learner's mastery estimate. The learner sees ``Didi checked your answers'' at her next login. The dashboard also shows group mastery, misconception counts, a decision log and a CSV export.
+
+\paragraph{Additional features.} Own stall numbers personalise questions; a price planner poses the reverse problem (guess the price for a target profit; M1 is diagnosed); a pop-up calculator removes arithmetic load; the learner report shows mastery over time and results by skill and format.
+
+\begin{figure}[H]\centering
+\shot{01-home.png}{Login}\hfill\shot{17-profile.png}{Profile hub}\hfill\shot{02-challenge.png}{STAR challenge}\hfill\shot{04-lesson.png}{Lesson}\\[6pt]
+\shot{05-question.png}{Generated question}\hfill\shot{10-spot.png}{Spot the mistake}\hfill\shot{12-dashboard.png}{Facilitator dashboard}\hfill\shot{18-report.png}{Learner report}
+\caption{Main screens of the live application (mobile view).}
+\end{figure}
+
+\section{Two Contrasting Learner Scenarios (D5)}
+\paragraph{(a) Correct learner.} She chooses Lata (25\%), which raises her K2 estimate. She answers the first generated question correctly; the tutor explains ``mastery $<$ 80\%, one more at the same level''. After the second correct answer, mastery exceeds 80\% and the tutor gives a \textbf{harder question} (level 2).
+
+\paragraph{(b) Learner with misconception M1.} She chooses Meena (20\%), which logs M1. For ``bought \Rs 200, sold \Rs 220'' she answers 9.1\% ($20/220$). The tutor diagnoses M1 and gives an \textbf{alternative explanation} using \Rs 100 notes, followed by a similar question. Repeating the error triggers \textbf{prerequisite instruction} on ``percent of an amount''; after a correct K1 answer she returns to profit percentage. Her explanation ``profit divided by the selling price times 100'' scores 1/3 and is flagged M1; the facilitator overrides it with her own feedback.
+
+\begin{figure}[H]\centering
+\shot{09-correct-harder.png}{(a) Correct $\to$ harder}\hfill\shot{06-alt-M1.png}{(b) M1 $\to$ alternative}\hfill\shot{07-prereq.png}{(b) Second miss $\to$ prerequisite}\hfill\shot{11-explain-fb.png}{(b) Explanation flagged M1}
+\caption{The two learner paths on the live application.}
+\end{figure}
+
+\section{AI Functionality Specification (D6)}
+\begin{table}[H]\small
+\begin{tabularx}{\linewidth}{@{}p{0.15\linewidth}YYp{0.2\linewidth}@{}}
+\toprule
+\textbf{Feature} & \textbf{Input and actual call} & \textbf{Check before learner sees it} & \textbf{Fallback} \\ \midrule
+Learner model (BKT) & \texttt{bktUpdate(pL, correct, format)}; $P(\text{slip})=0.1$, $P(\text{transit})=0.15$; $P(\text{guess})$: MCQ 0.25, spot 0.33, numeric 0.15, explain 0.15, hinted 0.5 & Clamped to 0.99; shown transparently in ``Why this next?'' and on the dashboard & Facilitator override re-runs the update \\
+Question generation & \texttt{makeQuestion(skill, level, format, myStall)} from parameter banks that keep values whole & Answers are computed, not generated; distractors deduplicated & Deterministic; no network \\
+Misconception diagnosis & \texttt{q.diag(answer)} compares with M1 $=\frac{|\text{SP}-\text{CP}|}{\text{SP}}\times100$, M2 $=|\text{SP}-\text{CP}|$, and the prerequisite error & Only exact pattern matches are tagged & Untagged errors receive a generic alternative explanation \\
+Explanation evaluator & \texttt{scoreExplanation(text, q)}: C1 cost-price base, C2 difference, C3 divide and $\times100$; selling-price base flagged M1 & Queued for facilitator approval or override & Model answer always shown \\
+Speech-to-text & Browser \texttt{webkitSpeechRecognition}, \texttt{lang = en-IN}, for dictating explanations & Learner sees and edits the text before sending & ``Voice not available, please type'' \\ \bottomrule
+\end{tabularx}
+\end{table}
+\noindent\textbf{Judgement in using AI.} Generative AI is not used for learner-facing feedback: a low-literacy learner cannot verify an incorrect explanation. Answers, diagnoses and decisions are therefore computed and transparent, and the facilitator reviews the one uncertain component, explanation scoring. A planned extension would replace the rubric with an LLM returning JSON \texttt{\{c1,c2,c3,m1,feedback\}}, validated against a schema and still routed to the facilitator queue.
+
+\section{Pedagogical Rationale (D7)}
+\label{sec:tutor}
+The STAR Legacy cycle asks the learner to commit to an idea before instruction and then contrasts two perspectives, making M1 visible to her. Practice follows mastery learning: a skill is complete only at $P(L)\geq0.90$ at level 3. Feedback is immediate and elaborated, and ``Why this next?'' acts as an open learner model. Scaffolding includes on-demand hints, alternative representations, worked-error (spot-the-mistake) tasks, prerequisite detours and self-explanation prompts.
+
+\paragraph{Decision rule (P4 design challenge).}
+\begin{lstlisting}
+if correct:
+    if hint used or time > 120 s      -> same level (hinted answer = weaker evidence)
+    elif P(L) >= 0.90 and level = 3   -> skill mastered, next skill
+    elif P(L) >= 0.80                 -> HARDER question (level + 1)
+    else                              -> same level (consolidate)
+else:
+    if prerequisite error, or P(K1) < 0.50, or 2nd wrong in a row
+                                      -> PREREQUISITE instruction on K1 (until P(K1) >= 0.70)
+    else                              -> ALTERNATIVE explanation + similar question
+\end{lstlisting}
+A single error with a known misconception is conceptual and is addressed by a new representation; a repeated error, or an error in the basic step, indicates a missing foundation, so the tutor teaches the prerequisite rather than repeating itself.
+
+\paragraph{How C5 and L3 shaped the design.} Automatic scoring of free text from a low-literacy adult is the least reliable component, so the facilitator is placed exactly there. The dashboard turns individual logs into group action (e.g.\ ``M1 seen three times: revisit the Meena--Lata example''). For L3: stall contexts, rupee amounts, short sentences, illustrated Indian women, a keypad PIN on a shared phone, voice dictation, encouraging wording, and WhatsApp sharing.
+
+\section{Evaluation Plan (D8)}
+\begin{table}[H]\small
+\begin{tabularx}{\linewidth}{@{}p{0.18\linewidth}YYp{0.22\linewidth}@{}}
+\toprule
+\textbf{Outcome} & \textbf{Assessment} & \textbf{Log data (collected)} & \textbf{Success criterion} \\ \midrule
+1. Calculate profit/loss \% & Post-test of four new numeric items; delayed test after two weeks & Skill, level, format, answer, correctness, misconception, seconds, hint, mastery before/after, decision & $\geq75\%$ of members score 3/4; M1 answers $<15\%$ \\
+2. Compute and compare discounts & Two final-price items and one offer comparison & K3 attempts, M2 tags, level reached & $\geq70\%$ correct on the comparison \\
+3. Explain and identify errors & Three-criterion rubric (0--3), double-scored by the facilitator; two spot-the-mistake items & Rubric scores, approve/override decisions & Mean rubric $\geq2.5$; tutor--facilitator agreement $\geq80\%$ \\ \bottomrule
+\end{tabularx}
+\end{table}
+\noindent All answer logs can be exported as CSV from the dashboard. System-level checks: $\geq80\%$ of prerequisite detours return to the main skill within three items; BKT next-answer prediction AUC $\geq0.7$; and, as transfer, whether the group prices its next batch using the cost-price base.
+
+\section*{AI-Use Log and Reflection}
+\textbf{Tool used:} Claude (Anthropic), in a single chat, for card selection support, DESIGN.md, code, commits, deployment, screenshots and the first draft of this report. \textbf{Chat link:} \emph{[paste the share link here]}
+
+\noindent\textbf{Reflection.} I chose the learner context and card, and checked that the persona, misconceptions and feedback fit an SHG stall seller. I directed the design (English interface, no synthetic voice, illustrated Indian faces, facilitator workflow) and tested both paths on the live application. My main AI-use decision was to keep correctness-critical parts deterministic and to place the facilitator where automated judgement is weakest. A limitation is that keyword-based rubric scoring can miss correct explanations phrased unusually; the facilitator override addresses this.
+\end{document}
