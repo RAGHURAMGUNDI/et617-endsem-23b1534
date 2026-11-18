@@ -72,7 +72,7 @@ function genK2(level, format, my) {
     CP = pick([200, 400, 500]); const p = pick([10, 20, 25, 50]); SP = CP + CP * p / 100;
     story = `The group bought papad for ${rs(CP)} and sold it for ${rs(SP)}.`;
   } else if (level === 2) {
-    CP = pick([250, 300, 600, 800]); const p = pick([15, 20, 30, 40]);
+    CP = pick([300, 400, 600, 800]); const p = pick([15, 20, 30, 40]);
     const loss = Math.random() < 0.5; SP = loss ? CP - CP * p / 100 : CP + CP * p / 100;
     story = loss ? `Some papad got damp. Bought for ${rs(CP)}, but sold for only ${rs(SP)}.`
                  : `Pickle jars: bought for ${rs(CP)}, sold for ${rs(SP)}.`;

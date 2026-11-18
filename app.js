@@ -473,3 +473,42 @@ function about() {
 document.getElementById('aboutLink').onclick = e => { e.preventDefault(); about(); };
 document.getElementById('homeLink').onclick = e => { e.preventDefault(); L ? profile() : home(); };
 home();
+
+// ---------- Pop-up calculator (floating, on every screen) ----------
+// Takes away the arithmetic load so the learner can focus on WHICH numbers to use (the concept).
+(function calculator() {
+  const fab = document.createElement('button');
+  fab.className = 'calc-fab'; fab.id = 'calcFab'; fab.setAttribute('aria-label', 'Open calculator'); fab.textContent = '🧮';
+  const pop = document.createElement('div');
+  pop.className = 'calc-pop hidden'; pop.id = 'calcPop';
+  pop.innerHTML = `<div class="calc-head"><b>🧮 Calculator</b><button class="calc-x" id="calcX" aria-label="Close">✕</button></div>
+    <div class="calc-expr" id="calcExpr">&nbsp;</div><div class="calc-disp" id="calcDisp">0</div>
+    <div class="calc-keys">${['C', '⌫', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '−', '1', '2', '3', '+', '0', '.', '(', '='].map(k =>
+      `<button class="ck ${'÷×−+='.includes(k) ? 'op' : ''} ${k === 'C' || k === '⌫' ? 'fn' : ''}" data-ck="${k}">${k}</button>`).join('')}</div>
+    <button class="btn small" id="calcUse">⬇ Put answer in the box</button>`;
+  document.body.append(fab, pop);
+  let expr = '';
+  const disp = document.getElementById('calcDisp'), ex = document.getElementById('calcExpr');
+  const evalExpr = e => {
+    const js = e.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+    if (!/^[\d+\-*/().\s]*$/.test(js)) return NaN;          // only numbers and operators
+    try { return Function('"use strict";return (' + (js || '0') + ')')(); } catch { return NaN; }
+  };
+  const show = () => { ex.textContent = expr || ' '; const v = evalExpr(expr); disp.textContent = isFinite(v) ? +v.toFixed(4) : '…'; };
+  pop.querySelectorAll('[data-ck]').forEach(b => b.onclick = () => {
+    const k = b.dataset.ck;
+    if (k === 'C') expr = '';
+    else if (k === '⌫') expr = expr.slice(0, -1);
+    else if (k === '=') { const v = evalExpr(expr); if (isFinite(v)) expr = String(+v.toFixed(4)); }
+    else if (k === '(') expr += (expr.split('(').length > expr.split(')').length && /[\d)]$/.test(expr)) ? ')' : '(';
+    else expr += k;
+    show();
+  });
+  fab.onclick = () => { pop.classList.toggle('hidden'); if (L && Q) logEvent('calculator', { skill: Q.skill }); };
+  document.getElementById('calcX').onclick = () => pop.classList.add('hidden');
+  document.getElementById('calcUse').onclick = () => {
+    const box = document.getElementById('ans'), v = evalExpr(expr);
+    if (box && isFinite(v) && box.type === 'number') { box.value = +v.toFixed(1); pop.classList.add('hidden'); box.focus(); }
+    else disp.textContent = box ? 'Type it in the box' : 'No answer box here';
+  };
+})();
