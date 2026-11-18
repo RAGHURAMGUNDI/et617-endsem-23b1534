@@ -145,3 +145,10 @@ summary { cursor: pointer; font-weight: 600; }
 .ck { padding: 12px 0; font-size: 19px; font-weight: 700; background: rgba(255,255,255,.85); border: 1px solid var(--line); }
 .ck.op { background: linear-gradient(135deg, var(--accent), #a35cff); color: #fff; }
 .ck.fn { color: #c2410c; }
+
+/* Price planner */
+.range { width: 100%; accent-color: var(--accent); height: 28px; }
+.plan-out { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 6px; }
+.plan-out div { background: rgba(255,255,255,.75); border: 1px solid var(--line); border-radius: 14px; padding: 8px 4px; text-align: center; }
+.plan-out span { display: block; font-size: 11px; color: var(--muted); }
+.plan-out b { font-size: 18px; color: var(--accent); }

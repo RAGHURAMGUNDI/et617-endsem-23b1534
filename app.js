@@ -148,13 +148,59 @@ function profile() {
     <button class="btn shine" id="lesson">📘 Take lesson ${L.challenge ? '<small>(again)</small>' : '<span class="badge">START HERE</span>'}</button>
     <button class="btn ${L.challenge ? '' : 'alt'}" id="practice">🎯 Practise ${L.challenge ? '' : '<small>(after the lesson)</small>'}</button>
     <button class="btn alt" id="rep">📊 My report</button>
+    <button class="btn alt" id="plan">🧾 Price planner (for my stall)</button>
     ${notes.length ? `<button class="btn alt" id="notes">💬 Didi's notes (${notes.filter(r => r.status !== 'pending').length} checked · ${notes.filter(r => r.status === 'pending').length} waiting)</button>` : ''}
   `);
   $('out').onclick = () => { L = null; home(); };
   $('lesson').onclick = challenge;
   $('practice').onclick = () => { if (!L.challenge) return challenge(); if (L.finished) { L.finished = false; L.items = Math.min(L.items, 8); } tutor(); };
   $('rep').onclick = report;
+  $('plan').onclick = planner;
   if ($('notes')) $('notes').onclick = () => didiNotes(notes.filter(r => r.status !== 'pending'), true);
+}
+
+// ---------- Price planner: the reverse problem (transfer to her own stall) ----------
+function planner() {
+  const st = L.plan || { cost: 20, packets: 30, pct: 20, price: '' };
+  screen(`<div class="step">PRICE PLANNER</div><h2>🧾 What price should I charge?</h2>
+    <div class="card glass">
+      <div class="duo"><div class="field"><input id="pc" class="inp" type="number" inputmode="numeric" placeholder=" " value="${st.cost}"><label for="pc">Cost of 1 packet ₹</label></div>
+        <div class="field"><input id="pn" class="inp" type="number" inputmode="numeric" placeholder=" " value="${st.packets}"><label for="pn">Packets</label></div></div>
+      <p class="lbl">Profit I want: <b id="pv">${st.pct}%</b></p>
+      <input id="pp" type="range" min="0" max="60" step="5" value="${st.pct}" class="range">
+      <div id="pout"></div>
+    </div>
+    <div class="card glass"><p class="lbl">✋ Try it yourself first</p>
+      <p>Before you look below: what price per packet gives this profit?</p>
+      <div class="numrow"><span>₹</span><input id="guess" class="inp" type="number" inputmode="decimal" step="any" placeholder="your price"></div>
+      <button class="btn small" id="chk">Check my price</button><div id="gfb"></div></div>
+    <button class="btn" id="back">← My profile</button>`);
+  const calc = () => {
+    const c = +$('pc').value || 0, n = +$('pn').value || 0, p = +$('pp').value;
+    $('pv').textContent = p + '%';
+    const price = c + c * p / 100, tot = price * n, prof = tot - c * n;
+    $('pout').innerHTML = c > 0 ? `<div class="plan-out">
+        <div><span>Sell 1 packet at</span><b>${rs(r1(price))}</b></div>
+        <div><span>All ${n} packets bring</span><b>${rs(r1(tot))}</b></div>
+        <div><span>Your profit</span><b>${rs(r1(prof))}</b></div></div>
+      <p class="muted">Why: ${p}% of the cost ${rs(c)} = ${rs(r1(c * p / 100))}, so price = ${c} + ${r1(c * p / 100)}. We add the % of the <b>cost</b>, never of the price.</p>` : '';
+    L.plan = { cost: c, packets: n, pct: p }; save();
+    return price;
+  };
+  ['pc', 'pn', 'pp'].forEach(id => $(id).oninput = calc);
+  calc();
+  $('chk').onclick = () => {
+    const g = +$('guess').value, price = calc(), c = +$('pc').value, p = +$('pp').value;
+    const m1 = c / (1 - p / 100); // the price that gives p% "on the selling price" (M1 thinking)
+    let fb;
+    if (Math.abs(g - price) < 0.6) fb = `<div class="feedback">🎉 Exactly right: ${rs(r1(price))} gives ${p}% profit on your cost.</div>`;
+    else if (p > 0 && Math.abs(g - m1) < 0.6) fb = `<div class="feedback support">🤔 ${rs(r1(g))} would make the profit ${p}% of the <b>selling price</b>. Profit % is on the <b>cost</b>: add ${p}% of ${rs(c)}.</div>`;
+    else if (g < c) fb = `<div class="feedback support">⚠️ ${rs(r1(g))} is less than the cost ${rs(c)}. That is a <b>loss</b>!</div>`;
+    else fb = `<div class="feedback support">Not quite. At ${rs(r1(g))} your profit would be <b>${r1((g - c) / c * 100)}%</b> of the cost. Move the slider and compare.</div>`;
+    $('gfb').innerHTML = fb;
+    logEvent('planner', { cost: c, pct: p, guess: g, correct: Math.abs(g - price) < 0.6 });
+  };
+  $('back').onclick = profile;
 }
 
 // ---------- Learner report ----------
