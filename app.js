@@ -154,9 +154,19 @@ function lesson() {
       <div class="formula">Discount: final price = marked price − (d% of marked price)</div>
       
     </div>
+    <div class="card glass">
+      <p class="lbl">🧺 Use my own stall numbers (optional)</p>
+      <p class="muted">What did you spend and earn on your last market day? Some questions will use your real numbers.</p>
+      <div class="duo"><div class="field"><input id="cp" class="inp" type="number" inputmode="numeric" placeholder=" " value="${L.myStall ? L.myStall.CP : ''}"><label for="cp">Spent ₹</label></div>
+        <div class="field"><input id="sp" class="inp" type="number" inputmode="numeric" placeholder=" " value="${L.myStall ? L.myStall.SP : ''}"><label for="sp">Sold for ₹</label></div></div>
+    </div>
     <p class="muted">Next, the tutor gives you questions. If you get them right, they get harder. If you get stuck, it explains in a new way.</p>
     <button class="btn" id="go">▶ Start practice</button>`);
-  $('go').onclick = () => tutor();
+  $('go').onclick = () => {
+    const cp = +$('cp').value, sp = +$('sp').value;
+    if (cp > 0 && sp > 0) { L.myStall = { CP: cp, SP: sp }; logEvent('my-stall', { CP: cp, SP: sp }); save(); }
+    tutor();
+  };
 }
 
 // ---------- STAR 5: Test your mettle (adaptive tutor) ----------
@@ -164,11 +174,11 @@ const FORMATS = { K1: ['num', 'mcq'], K2: ['mcq', 'num', 'spot', 'explain', 'num
 function nextQuestion() {
   const k = L.mode === 'prereq' ? 'K1' : L.skill;
   const f = FORMATS[k][L.attempts[k] % FORMATS[k].length];
-  return makeQuestion(k, L.level[k], f);
+  return makeQuestion(k, L.level[k], f, L.myStall);
 }
 function tutor(preface) {
   if (L.items >= 14 || L.finished) return summary();
-  Q = nextQuestion();
+  Q = nextQuestion(); Q.shownAt = Date.now(); Q.hintUsed = false;
   const fmtName = { mcq: 'Choose one', num: 'Type the number', spot: 'Find the mistake', explain: 'Explain in your words' }[Q.format];
   let input = '';
   if (Q.format === 'mcq') input = Q.options.map(o => `<button class="btn alt" data-v="${o.v}">${o.t}</button>`).join('');
@@ -190,7 +200,7 @@ function tutor(preface) {
   if ($('sub')) $('sub').onclick = () => { const v = $('ans').value.trim(); if (v) answer(v); };
   if ($('mic')) $('mic').onclick = dictate;
   const h = app.querySelector('details.hint');
-  if (h) h.ontoggle = () => { if (h.open) logEvent('hint', { skill: Q.skill }); };
+  if (h) h.ontoggle = () => { if (h.open) { Q.hintUsed = true; logEvent('hint', { skill: Q.skill }); } };
 }
 function dictate() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition, mic = $('mic');
@@ -203,6 +213,7 @@ function dictate() {
 
 function answer(v) {
   const k = Q.skill;
+  Q.secs = (Date.now() - Q.shownAt) / 1000;
   let correct = Q.check(v), tag = correct ? null : Q.diag(v), evalRes = null;
   if (Q.format === 'explain') {
     evalRes = scoreExplanation(v, Q);
@@ -211,11 +222,12 @@ function answer(v) {
   }
   // update learner model
   const before = L.mastery[k];
-  L.mastery[k] = bktUpdate(L.mastery[k], correct, Q.format);
+  L.mastery[k] = bktUpdate(L.mastery[k], correct, Q.hintUsed && correct ? 'hinted' : Q.format);
   L.attempts[k]++; L.items++; if (correct) { L.correct++; L.wrongStreak[k] = 0; } else L.wrongStreak[k]++;
   if (tag) L.misc[tag]++;
   const d = decide(L, Q, correct, tag);
   logEvent('answer', { skill: k, level: Q.level, format: Q.format, given: String(v).slice(0, 80), correct, tag,
+    secs: Math.round(Q.secs), hint: Q.hintUsed, own: Q.text.startsWith('🧺'),
     before: Math.round(before * 100), after: Math.round(L.mastery[k] * 100), action: d.action });
 
   // apply the decision
@@ -275,6 +287,7 @@ function summary() {
       ${masteryBars(L)}
       <p>${strong.length ? '💪 Strong in: ' + strong.join(', ') : '🌱 Keep practising. You are improving!'}</p>
       <p>🔑 Remember: <b>profit % = profit ÷ cost price × 100</b></p>
+      ${L.myStall && L.myStall.CP !== L.myStall.SP ? `<p>🧺 Your stall: spent ${rs(L.myStall.CP)}, sold ${rs(L.myStall.SP)} → <b>${L.myStall.SP > L.myStall.CP ? 'profit' : 'loss'} ${r1(Math.abs(L.myStall.SP - L.myStall.CP) / L.myStall.CP * 100)}%</b></p>` : ''}
     </div>
     <p class="muted">Show this card at the next group meeting and explain one question to a friend. Teaching others is the best test!</p>
     <button class="btn" id="more">🔁 Practise more</button>
@@ -307,10 +320,18 @@ function dashboard() {
         <textarea class="inp" rows="2" placeholder="Or write your own feedback…"></textarea>
         <label><input type="checkbox" class="mark"> Mark the answer as correct</label>
         <button class="btn small" data-act="override">✏️ Override with my feedback</button></div>`).join('') || '<p class="muted">Nothing waiting. 🎉</p>'}</div>
-    <div class="card"><b>Decision log (last 12)</b><table class="tbl"><tr><th>Member</th><th>Skill</th><th>Fmt</th><th>✔?</th><th>Tag</th><th>Mastery</th><th>Decision</th></tr>
+    <div class="card"><b>Decision log (last 12)</b><table class="tbl"><tr><th>Member</th><th>Skill</th><th>Fmt</th><th>✔?</th><th>Tag</th><th>💡/⏱</th><th>Mastery</th><th>Decision</th></tr>
       ${ls.flatMap(l => l.log.filter(e => e.type === 'answer').map(e => ({ ...e, n: l.name }))).slice(-12).reverse()
-        .map(e => `<tr><td>${e.n}</td><td>${e.skill} L${e.level}</td><td>${e.format}</td><td>${e.correct ? '✔' : '✖'}</td><td>${e.tag || ''}</td><td>${e.before}→${e.after}</td><td>${e.action}</td></tr>`).join('')}</table></div>
+        .map(e => `<tr><td>${e.n}</td><td>${e.skill} L${e.level}</td><td>${e.format}</td><td>${e.correct ? '✔' : '✖'}</td><td>${e.tag || ''}</td><td>${e.hint ? '💡' : ''}${e.secs ?? ''}s</td><td>${e.before}→${e.after}</td><td>${e.action}</td></tr>`).join('')}</table></div>
+    <button class="btn green" id="csv">⬇ Download all data (CSV)</button>
     <button class="btn alt" id="back">🏠 Home</button>`);
+  $('csv').onclick = () => {
+    const rows = [['member', 'time', 'skill', 'level', 'format', 'answer', 'correct', 'misconception', 'seconds', 'hint', 'own_numbers', 'mastery_before', 'mastery_after', 'decision']];
+    ls.forEach(l => l.log.filter(e => e.type === 'answer').forEach(e => rows.push([l.name, e.t, e.skill, e.level, e.format, e.given, e.correct, e.tag || '', e.secs ?? '', e.hint ?? '', e.own ?? '', e.before, e.after, e.action])));
+    const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'munafa-tutor-data.csv'; a.click();
+  };
   app.querySelectorAll('.review').forEach(div => {
     const r = DB.reviews.find(x => x.id == div.dataset.id);
     div.querySelector('[data-act=approve]').onclick = () => {

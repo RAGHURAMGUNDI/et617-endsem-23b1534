@@ -18,7 +18,7 @@ const PREREQ_WEAK = 0.5;             // K1 below this → prerequisite instructi
 
 // ---------- BKT ----------
 // P(slip) = 0.1, P(transit) = 0.15; P(guess) depends on the format.
-const GUESS = { mcq: 0.25, spot: 0.33, num: 0.15, explain: 0.15 };
+const GUESS = { mcq: 0.25, spot: 0.33, num: 0.15, explain: 0.15, hinted: 0.5 }; // a hinted answer is weaker evidence
 function bktUpdate(pL, correct, format) {
   const g = GUESS[format] ?? 0.1, s = 0.1, T = 0.15;
   const post = correct
@@ -37,9 +37,9 @@ const rs = n => '₹' + n.toLocaleString('en-IN');
 // ---------- Question generation ----------
 // Every question has: skill, level, format, text, answer, check(input) → bool,
 // diag(input) → misconception tag ('M1' | 'M2' | 'P' | null), solution (model answer).
-function makeQuestion(skill, level, format) {
+function makeQuestion(skill, level, format, myStall) {
   if (skill === 'K1') return genK1(level, format);
-  if (skill === 'K2') return genK2(level, format);
+  if (skill === 'K2') return genK2(level, format, myStall);
   return genK3(level, format);
 }
 
@@ -62,9 +62,13 @@ function genK1(level, format) {
 }
 
 // K2: profit or loss % (base = cost price)
-function genK2(level, format) {
+function genK2(level, format, my) {
   let CP, SP, story;
-  if (level === 1) {
+  if (my && my.CP !== my.SP && level < 3 && Math.random() < 0.5) {
+    // personalised: the learner's own numbers from her last market day
+    CP = my.CP; SP = my.SP;
+    story = `🧺 Your own stall: last market day you spent ${rs(CP)} and sold for ${rs(SP)}.`;
+  } else if (level === 1) {
     CP = pick([200, 400, 500]); const p = pick([10, 20, 25, 50]); SP = CP + CP * p / 100;
     story = `The group bought papad for ${rs(CP)} and sold it for ${rs(SP)}.`;
   } else if (level === 2) {
@@ -182,6 +186,10 @@ function decide(st, q, correct, tag) {
     return { action: 'same', reason: `Still practising the prerequisite: K1 mastery ${pct(st.mastery.K1)} (< 70%).` };
   }
   if (correct) {
+    // interaction signals: a hint or a very slow answer holds back "harder"
+    const slow = q.secs > 120;
+    if ((q.hintUsed || slow) && p < MASTERED)
+      return { action: 'same', reason: `Correct, but you ${q.hintUsed ? 'used a hint' : 'took ' + Math.round(q.secs) + ' seconds'} → one more at the same level before it gets harder.` };
     if (p >= MASTERED && st.level[q.skill] === 3) {
       const nxt = ORDER[ORDER.indexOf(q.skill) + 1];
       return nxt ? { action: 'next-skill', reason: `${SKILLS[q.skill].name} mastery ${pct(p)} ≥ 90% at the top level: skill mastered. Moving on to ${SKILLS[nxt].name}.` }
